@@ -12,7 +12,7 @@ let spriteLives = 5;
 
 //ENEMY CONSTANTS
 const enemyBulletLimit = 1;
-const enemySpeed = 1.05;
+const enemySpeed = 0.05;
 const enemyRotationSpeed = Math.PI / 240;
 const createEnemyTime = [300, 1000];
 const enemyShootTime = [500, 2000];
@@ -259,21 +259,23 @@ function update(elapsedTime) {
     }
 
     //Enemies movement
-    enemies.forEach(function (enemy) {
+    enemies.forEach(function (enemy, index) {
         enemy.rotation += enemyRotationSpeed;
         enemy.x = Math.sin(enemy.rotation) * WIDTH / 2 + WIDTH / 2;
         enemy.y += enemySpeed * elapsedTime;
         if(enemy.y + enemy.h > HEIGHT){
-            sprite.lives = 0;
+            sprite.lives -= 1;
+            enemies.splice(index, 1);
+
         }
     });
 
     //Checking for sprite lives
-    return sprite.lives > 0;
+    return sprite.lives > -1;
 }
 
 //render the world
-function render(elapsedTime) {
+function render() {
     canvasctxBuffer.clearRect(0, 0, WIDTH, HEIGHT);
     canvasctxBuffer.fillStyle = '#FF0000';
     canvasctxBuffer.fillRect(sprite.x, sprite.y - sprite.h, sprite.w, sprite.h);
