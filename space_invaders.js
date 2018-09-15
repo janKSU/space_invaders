@@ -3,7 +3,7 @@ const WIDTH = 800;
 const HEIGHT = 640;
 
 //BULLET CONSTANTS
-const bulletSpeed = 0.5;
+const bulletSpeed = 0.01;
 const bulletSize = 8;
 
 //SPRITE CONSTANTS
@@ -11,13 +11,14 @@ const spriteBulletLimit = 5;
 let spriteLives = 5;
 
 //ENEMY CONSTANTS
+const enemyValue = 10;
+const enemySize = 30;
 const enemyBulletLimit = 1;
 const enemySpeed = 0.05;
-const enemyRotationSpeed = Math.PI / 240;
-const createEnemyTime = [300, 1000];
-const enemyShootTime = [500, 2000];
-const enemyValue = 10;
-const enemySize = 50;
+const createEnemyTime = [500, 2000];
+const enemyShootTime = [2000, 5000];
+const enemyMinInterval = [WIDTH / 4, WIDTH / 4];
+const enemyMaxInterval = [WIDTH / 4, 3 / 4 * WIDTH - enemySize];
 let createEnemy = getRndInteger(createEnemyTime[0], createEnemyTime[1]);
 
 class Object {
@@ -43,6 +44,7 @@ class Sprite extends Object {
             console.log('Sprite cannot shoot more than 3 bullets')
         } else {
             this.bullets.push(new Bullet(this.x, this.y, bulletSize, bulletSize));
+            //TODO: shoot from the front of the sprite
         }
 
     }
@@ -56,19 +58,24 @@ class Bullet extends Object {
 }
 
 class Enemy extends Object {
-    constructor(x, y, w, h, rotation, speed, shootingReload, value) {
-        super(x, y, w, h);
-        this.rotation = rotation;
-        this.speed = speed;
+    constructor(x, y) {
+        super(x, y, enemySize, enemySize);
+        this.rotationSpeed = Math.PI / getRndInteger(120, 240);
+        this.rotation = 0;
+        this.speed = enemySpeed;
+        this.min = getRndInteger(enemyMinInterval[0], enemyMinInterval[1]);
+        this.max = getRndInteger(enemyMaxInterval[0], enemyMaxInterval[1]);
         this.bullets = [];
-        this.shootingReload = shootingReload;
+        this.rotationFunc = getRndInteger(0, 2);
+        this.shootingReload = getRndInteger(enemyShootTime[0], enemyShootTime[1]);
         this.lastShootingTime = 0;
-        this.value = value;
+        this.value = enemyValue;
     }
 
     shoot(elapsedTime) {
         if (this.bullets.length < enemyBulletLimit && this.lastShootingTime > this.shootingReload) {
             this.bullets.push(new Bullet(this.x, this.y, bulletSize, bulletSize));
+            // TODO: shoot from the front of the enemy
             this.lastShootingTime = 0;
         } else {
             this.lastShootingTime += elapsedTime;
@@ -103,7 +110,7 @@ var enemies = null;
 var TimeNewEnemy = null;
 var sprite = null;
 
-function init(){
+function init() {
     //Game content variables
     currentInput = {
         left: false,
@@ -134,19 +141,19 @@ function handleKeyDown(event) {
         case ' ':
             currentInput.space = true;
             break;
-        case 'ArrowUp':
+        /*case 'ArrowUp':
             currentInput.up = true;
             break;
         case 'ArrowDown':
             currentInput.down = true;
-            break;
+            break;*/
         case 'ArrowRight':
             currentInput.right = true;
             break;
         case 'ArrowLeft':
             currentInput.left = true;
         case 'r':
-            if (gameOver){
+            if (gameOver) {
                 gameOver = false;
                 init();
                 window.requestAnimationFrame(gameloop);
@@ -159,12 +166,12 @@ function handleKeyUp(event) {
         case ' ':
             currentInput.space = false;
             break;
-        case 'ArrowUp':
+       /* case 'ArrowUp':
             currentInput.up = false;
             break;
         case 'ArrowDown':
             currentInput.down = false;
-            break;
+            break;*/
         case 'ArrowRight':
             currentInput.right = false;
             break;
@@ -251,7 +258,7 @@ function update(elapsedTime) {
 
     //Creating new enemies
     if (TimeNewEnemy > createEnemy) {
-        enemies.push(new Enemy(WIDTH / 2, 0, enemySize, enemySize, enemyRotationSpeed, enemySpeed, getRndInteger(enemyShootTime[0], enemyShootTime[1]), enemyValue));
+        enemies.push(new Enemy(getRndInteger(0, WIDTH - enemySize), 0-enemySize));
         TimeNewEnemy = 0;
         createEnemy = getRndInteger(createEnemyTime[0], createEnemyTime[1]);
     } else {
@@ -260,18 +267,22 @@ function update(elapsedTime) {
 
     //Enemies movement
     enemies.forEach(function (enemy, index) {
-        enemy.rotation += enemyRotationSpeed;
-        enemy.x = Math.sin(enemy.rotation) * WIDTH / 2 + WIDTH / 2;
+        enemy.rotation += enemy.rotationSpeed;
+        if (enemy.rotationFunc === 1) {
+            enemy.x = Math.sin(enemy.rotation) * enemy.min + enemy.max;
+        } else {
+            enemy.x = Math.cos(enemy.rotation) * enemy.min + enemy.max;
+        }
+
         enemy.y += enemySpeed * elapsedTime;
-        if(enemy.y + enemy.h > HEIGHT){
+        if (enemy.y + enemy.h > HEIGHT) {
             sprite.lives -= 1;
             enemies.splice(index, 1);
-
         }
     });
 
     //Checking for sprite lives
-    return sprite.lives > -1;
+    return sprite.lives > 0;
 }
 
 //render the world
@@ -296,11 +307,11 @@ function render() {
 
     canvasctxBuffer.font = "20px Arial";
     canvasctxBuffer.fillStyle = "#000000";
-    canvasctxBuffer.fillText("Lives: "+sprite.lives,WIDTH-100,HEIGHT-5);
+    canvasctxBuffer.fillText("Lives: " + sprite.lives, WIDTH - 100, HEIGHT - 5);
 
     canvasctxBuffer.font = "20px Arial";
     canvasctxBuffer.fillStyle = "#000000";
-    canvasctxBuffer.fillText("Score: "+sprite.score,WIDTH-100,HEIGHT-25);
+    canvasctxBuffer.fillText("Score: " + sprite.score, WIDTH - 100, HEIGHT - 25);
 }
 
 //main game loop function
@@ -316,18 +327,18 @@ function gameloop(timestamp) {
     // Double buffering
     canvasctx.fillStyle = '#FFFFFF';
     canvasctx.fillRect(0, 0, WIDTH, HEIGHT);
-    canvasctx.drawImage(canvasBuffer,0,0);
+    canvasctx.drawImage(canvasBuffer, 0, 0);
 
     priorInput = JSON.parse(JSON.stringify(currentInput));
-    if (res){
+    if (res) {
         window.requestAnimationFrame(gameloop);
-    } else{
+    } else {
         gameOver = true;
         sprite = null;
         canvasctx.fillStyle = '#000000';
         canvasctx.font = "40px Arial";
-        canvasctx.fillText("Game Over", WIDTH/2-WIDTH/7,HEIGHT/2);
-        canvasctx.fillText("Press 'r' for game restart", WIDTH/2-WIDTH/4,HEIGHT/2+HEIGHT/7);
+        canvasctx.fillText("Game Over", WIDTH / 2 - WIDTH / 7, HEIGHT / 2);
+        canvasctx.fillText("Press 'r' for game restart", WIDTH / 2 - WIDTH / 4, HEIGHT / 2 + HEIGHT / 7);
     }
 }
 
