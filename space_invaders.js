@@ -3,11 +3,12 @@ const WIDTH = 800;
 const HEIGHT = 640;
 
 //BULLET CONSTANTS
-const bulletSpeed = 0.01;
+const bulletSpeed = 0.3;
 const bulletSize = 8;
 
 //SPRITE CONSTANTS
 const spriteBulletLimit = 5;
+const spriteSize = 25;
 let spriteLives = 5;
 
 //ENEMY CONSTANTS
@@ -20,6 +21,7 @@ const enemyShootTime = [2000, 5000];
 const enemyMinInterval = [WIDTH / 4, WIDTH / 4];
 const enemyMaxInterval = [WIDTH / 4, 3 / 4 * WIDTH - enemySize];
 let createEnemy = getRndInteger(createEnemyTime[0], createEnemyTime[1]);
+let freeBullets = [];
 
 class Object {
     constructor(x, y, w, h) {
@@ -43,8 +45,7 @@ class Sprite extends Object {
         if (this.bullets.length > spriteBulletLimit - 1) {
             console.log('Sprite cannot shoot more than 3 bullets')
         } else {
-            this.bullets.push(new Bullet(this.x, this.y, bulletSize, bulletSize));
-            //TODO: shoot from the front of the sprite
+            this.bullets.push(new Bullet(this.x+this.w/3, this.y-this.h, bulletSize, bulletSize));
         }
 
     }
@@ -74,8 +75,7 @@ class Enemy extends Object {
 
     shoot(elapsedTime) {
         if (this.bullets.length < enemyBulletLimit && this.lastShootingTime > this.shootingReload) {
-            this.bullets.push(new Bullet(this.x, this.y, bulletSize, bulletSize));
-            // TODO: shoot from the front of the enemy
+            this.bullets.push(new Bullet(this.x+this.w/2, this.y+this.h-bulletSize, bulletSize, bulletSize));
             this.lastShootingTime = 0;
         } else {
             this.lastShootingTime += elapsedTime;
@@ -131,7 +131,7 @@ function init() {
     enemies = [];
     TimeNewEnemy = 0;
 
-    sprite = new Sprite(WIDTH / 2, HEIGHT, 20, 20, spriteLives);
+    sprite = new Sprite(WIDTH / 2, HEIGHT, spriteSize, spriteSize, spriteLives);
 }
 
 init();
@@ -222,6 +222,9 @@ function update(elapsedTime) {
             if (collision(bullet, enemy)) {
                 sprite.score += enemy.value;
                 sprite.bullets.splice(indexBullet, 1);
+                enemy.bullets.forEach(function (enemyBullet) {
+                   freeBullets.push(enemyBullet);
+                });
                 enemies.splice(indexEnemy, 1);
             }
         });
@@ -254,6 +257,14 @@ function update(elapsedTime) {
                 enemy.bullets.splice(index, 1);
             }
         });
+    });
+
+    //Moving with bullets that left from dead enemies
+    freeBullets.forEach(function (bullet, index) {
+        bullet.y += bulletSpeed * elapsedTime;
+        if (bullet.y > HEIGHT) {
+            freeBullets.splice(index, 1);
+        }
     });
 
     //Creating new enemies
@@ -303,6 +314,11 @@ function render() {
             canvasctxBuffer.fillStyle = '#6047FF';
             canvasctxBuffer.fillRect(bullet.x, bullet.y, bullet.w, bullet.h);
         })
+    });
+
+    freeBullets.forEach(function (bullet) {
+        canvasctxBuffer.fillStyle = '#6047FF';
+        canvasctxBuffer.fillRect(bullet.x, bullet.y, bullet.w, bullet.h);
     });
 
     canvasctxBuffer.font = "20px Arial";
