@@ -45,7 +45,7 @@ class Sprite extends Object {
         if (this.bullets.length > spriteBulletLimit - 1) {
             console.log('Sprite cannot shoot more than ' + spriteBulletLimit + ' bullets');
         } else {
-            this.bullets.push(new Bullet(this.x + this.w / 3, this.y - this.h, bulletSize, bulletSize));
+            this.bullets.push(new Bullet(this.x + this.w / 3, this.y, bulletSize, bulletSize));
         }
 
     }
@@ -75,7 +75,7 @@ class Enemy extends Object {
 
     shoot(elapsedTime) {
         if (this.bullets.length < enemyBulletLimit && this.lastShootingTime > this.shootingReload) {
-            this.bullets.push(new Bullet(this.x + this.w / 2, this.y + this.h - bulletSize, bulletSize, bulletSize));
+            this.bullets.push(new Bullet(this.x + this.w / 3, this.y + this.h - bulletSize, bulletSize, bulletSize));
             this.lastShootingTime = 0;
         } else {
             this.lastShootingTime += elapsedTime;
@@ -355,8 +355,6 @@ function gameloop(timestamp) {
     } else {
         gameOver = true;
         sprite = null;
-        canvasctx.fillStyle = '#FFFFFF';
-        canvasctx.fillRect(0, 0, WIDTH, HEIGHT);
         canvasctx.fillStyle = '#000000';
         canvasctx.font = "40px Arial";
         canvasctx.fillText("Game Over", WIDTH / 2 - WIDTH / 7, HEIGHT / 2);
