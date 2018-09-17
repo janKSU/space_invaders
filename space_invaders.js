@@ -3,11 +3,11 @@ const WIDTH = 800;
 const HEIGHT = 640;
 
 //BULLET CONSTANTS
-const bulletSpeed = 0.3;
+const bulletSpeed = 0.4;
 const bulletSize = 8;
 
 //SPRITE CONSTANTS
-const spriteBulletLimit = 5;
+const spriteBulletLimit = 4;
 const spriteSize = 25;
 let spriteLives = 5;
 
@@ -43,9 +43,9 @@ class Sprite extends Object {
 
     shoot() {
         if (this.bullets.length > spriteBulletLimit - 1) {
-            console.log('Sprite cannot shoot more than 3 bullets')
+            console.log('Sprite cannot shoot more than ' + spriteBulletLimit + ' bullets');
         } else {
-            this.bullets.push(new Bullet(this.x+this.w/3, this.y-this.h, bulletSize, bulletSize));
+            this.bullets.push(new Bullet(this.x + this.w / 3, this.y - this.h, bulletSize, bulletSize));
         }
 
     }
@@ -75,7 +75,7 @@ class Enemy extends Object {
 
     shoot(elapsedTime) {
         if (this.bullets.length < enemyBulletLimit && this.lastShootingTime > this.shootingReload) {
-            this.bullets.push(new Bullet(this.x+this.w/2, this.y+this.h-bulletSize, bulletSize, bulletSize));
+            this.bullets.push(new Bullet(this.x + this.w / 2, this.y + this.h - bulletSize, bulletSize, bulletSize));
             this.lastShootingTime = 0;
         } else {
             this.lastShootingTime += elapsedTime;
@@ -131,7 +131,7 @@ function init() {
     enemies = [];
     TimeNewEnemy = 0;
 
-    sprite = new Sprite(WIDTH / 2, HEIGHT, spriteSize, spriteSize, spriteLives);
+    sprite = new Sprite(WIDTH / 2, HEIGHT - spriteSize, spriteSize, spriteSize, spriteLives);
 }
 
 init();
@@ -152,12 +152,14 @@ function handleKeyDown(event) {
             break;
         case 'ArrowLeft':
             currentInput.left = true;
+            break;
         case 'r':
             if (gameOver) {
                 gameOver = false;
                 init();
                 window.requestAnimationFrame(gameloop);
             }
+            break;
     }
 }
 
@@ -166,12 +168,12 @@ function handleKeyUp(event) {
         case ' ':
             currentInput.space = false;
             break;
-       /* case 'ArrowUp':
-            currentInput.up = false;
-            break;
-        case 'ArrowDown':
-            currentInput.down = false;
-            break;*/
+        /* case 'ArrowUp':
+             currentInput.up = false;
+             break;
+         case 'ArrowDown':
+             currentInput.down = false;
+             break;*/
         case 'ArrowRight':
             currentInput.right = false;
             break;
@@ -204,41 +206,11 @@ function update(elapsedTime) {
         sprite.shoot();
     }
     if (currentInput.left) {
-        sprite.x -= 0.2 * elapsedTime;
+        sprite.x -= 0.3 * elapsedTime;
     }
     if (currentInput.right) {
-        sprite.x += 0.2 * elapsedTime;
+        sprite.x += 0.3 * elapsedTime;
     }
-    if (currentInput.up) {
-        sprite.y -= 0.1 * elapsedTime;
-    }
-    if (currentInput.down) {
-        sprite.y += 0.1 * elapsedTime;
-    }
-
-    //Detecting collisions between sprite bullets and enemies
-    sprite.bullets.forEach(function (bullet, indexBullet) {
-        enemies.forEach(function (enemy, indexEnemy) {
-            if (collision(bullet, enemy)) {
-                sprite.score += enemy.value;
-                sprite.bullets.splice(indexBullet, 1);
-                enemy.bullets.forEach(function (enemyBullet) {
-                   freeBullets.push(enemyBullet);
-                });
-                enemies.splice(indexEnemy, 1);
-            }
-        });
-    });
-
-    //Detecting collision between enemies bullets and sprites
-    enemies.forEach(function (enemy) {
-        enemy.bullets.forEach(function (bullet, index) {
-            if (collision(bullet, sprite)) {
-                sprite.lives -= 1;
-                enemy.bullets.splice(index, 1);
-            }
-        });
-    });
 
     //Moving with bullets from Sprite
     sprite.bullets.forEach(function (bullet, index) {
@@ -267,15 +239,6 @@ function update(elapsedTime) {
         }
     });
 
-    //Creating new enemies
-    if (TimeNewEnemy > createEnemy) {
-        enemies.push(new Enemy(getRndInteger(0, WIDTH - enemySize), 0-enemySize));
-        TimeNewEnemy = 0;
-        createEnemy = getRndInteger(createEnemyTime[0], createEnemyTime[1]);
-    } else {
-        TimeNewEnemy += elapsedTime;
-    }
-
     //Enemies movement
     enemies.forEach(function (enemy, index) {
         enemy.rotation += enemy.rotationSpeed;
@@ -292,6 +255,47 @@ function update(elapsedTime) {
         }
     });
 
+    //Detecting collisions between sprite bullets and enemies
+    sprite.bullets.forEach(function (bullet, indexBullet) {
+        enemies.forEach(function (enemy, indexEnemy) {
+            if (collision(bullet, enemy)) {
+                sprite.score += enemy.value;
+                sprite.bullets.splice(indexBullet, 1);
+                enemy.bullets.forEach(function (enemyBullet) {
+                    freeBullets.push(enemyBullet);
+                });
+                enemies.splice(indexEnemy, 1);
+            }
+        });
+    });
+
+    //Detecting collision between enemies bullets and sprites
+    enemies.forEach(function (enemy) {
+        enemy.bullets.forEach(function (bullet, index) {
+            if (collision(bullet, sprite)) {
+                sprite.lives -= 1;
+                enemy.bullets.splice(index, 1);
+            }
+        });
+    });
+
+    //Detecting collision between free bullets and sprites
+    freeBullets.forEach(function (bullet, index) {
+        if (collision(bullet, sprite)) {
+            sprite.lives -= 1;
+            freeBullets.splice(index, 1);
+        }
+    });
+
+    //Creating new enemies
+    if (TimeNewEnemy > createEnemy) {
+        enemies.push(new Enemy(getRndInteger(0, WIDTH - enemySize), 0 - enemySize));
+        TimeNewEnemy = 0;
+        createEnemy = getRndInteger(createEnemyTime[0], createEnemyTime[1]);
+    } else {
+        TimeNewEnemy += elapsedTime;
+    }
+
     //Checking for sprite lives
     return sprite.lives > 0;
 }
@@ -300,7 +304,7 @@ function update(elapsedTime) {
 function render() {
     canvasctxBuffer.clearRect(0, 0, WIDTH, HEIGHT);
     canvasctxBuffer.fillStyle = '#FF0000';
-    canvasctxBuffer.fillRect(sprite.x, sprite.y - sprite.h, sprite.w, sprite.h);
+    canvasctxBuffer.fillRect(sprite.x, sprite.y, sprite.w, sprite.h);
 
     sprite.bullets.forEach(function (bullet) {
         canvasctxBuffer.fillStyle = '#6047FF';
@@ -323,11 +327,11 @@ function render() {
 
     canvasctxBuffer.font = "20px Arial";
     canvasctxBuffer.fillStyle = "#000000";
-    canvasctxBuffer.fillText("Lives: " + sprite.lives, WIDTH - 100, HEIGHT - 5);
+    canvasctxBuffer.fillText("Lives: " + sprite.lives, WIDTH - 90, 25);
 
     canvasctxBuffer.font = "20px Arial";
     canvasctxBuffer.fillStyle = "#000000";
-    canvasctxBuffer.fillText("Score: " + sprite.score, WIDTH - 100, HEIGHT - 25);
+    canvasctxBuffer.fillText("Score: " + sprite.score, 5, 25);
 }
 
 //main game loop function
@@ -351,6 +355,8 @@ function gameloop(timestamp) {
     } else {
         gameOver = true;
         sprite = null;
+        canvasctx.fillStyle = '#FFFFFF';
+        canvasctx.fillRect(0, 0, WIDTH, HEIGHT);
         canvasctx.fillStyle = '#000000';
         canvasctx.font = "40px Arial";
         canvasctx.fillText("Game Over", WIDTH / 2 - WIDTH / 7, HEIGHT / 2);
