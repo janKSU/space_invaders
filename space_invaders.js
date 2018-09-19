@@ -205,10 +205,10 @@ function update(elapsedTime) {
     if (currentInput.space && !priorInput.space) {
         sprite.shoot();
     }
-    if (currentInput.left) {
+    if (currentInput.left && sprite.x >= 1) {
         sprite.x -= 0.3 * elapsedTime;
     }
-    if (currentInput.right) {
+    if (currentInput.right && sprite.x + sprite.w <= WIDTH-1) {
         sprite.x += 0.3 * elapsedTime;
     }
 
